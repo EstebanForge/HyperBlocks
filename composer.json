@@ -18,6 +18,12 @@
             "homepage": "https://github.com/EstebanForge"
         }
     ],
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../HyperFields"
+        }
+    ],
     "require": {
         "php": ">=8.1",
         "estebanforge/hyperfields": "^1.0"
@@ -34,6 +40,7 @@
             "HyperBlocks\\": "src/"
         },
         "files": [
+            "bootstrap.php",
             "src/helpers.php"
         ]
     },

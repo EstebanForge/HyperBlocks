@@ -8,7 +8,6 @@ declare(strict_types=1);
  * This file registers the library instance as a candidate and ensures the newest
  * version is selected and initialized when multiple copies are loaded.
  */
-
 if (!function_exists('hyperblocks_run_initialization_logic')) {
     /**
      * Initialize HyperBlocks with the given base file path and version.
@@ -47,8 +46,8 @@ if (!function_exists('hyperblocks_run_initialization_logic')) {
             define('HYPERBLOCKS_PLUGIN_URL', $plugin_url);
         }
 
-        if (class_exists(\HyperBlocks\WordPress\Bootstrap::class) && function_exists('add_action')) {
-            \HyperBlocks\WordPress\Bootstrap::init();
+        if (class_exists(HyperBlocks\WordPress\Bootstrap::class) && function_exists('add_action')) {
+            HyperBlocks\WordPress\Bootstrap::init();
         }
     }
 }

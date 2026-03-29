@@ -2,7 +2,7 @@
   "name": "estebanforge/hyperblocks",
   "description": "HyperBlocks: A powerful block library for WordPress with fluent API and field integration.",
   "type": "library",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "GPL-2.0-or-later",
   "keywords": [
     "wordpress",
@@ -51,7 +51,7 @@
     ]
   },
   "scripts": {
-    "test": "php -d pcov.enabled=1 vendor/bin/pest --configuration phpunit.xml --colors=always",
+    "test": "bash -lc 'if [ ! -f vendor/bin/pest ]; then composer update --no-interaction --no-progress; fi; php -d pcov.enabled=1 vendor/bin/pest --configuration phpunit.xml --colors=always'",
     "test:unit": "php -d pcov.enabled=1 vendor/bin/pest --configuration phpunit.xml tests/Unit --colors=always",
     "test:integration": "php -d pcov.enabled=1 vendor/bin/pest --configuration phpunit.xml tests/Integration --colors=always",
     "test:coverage": "php -d pcov.enabled=1 vendor/bin/pest --configuration phpunit.xml --coverage-html coverage-html --coverage-text",

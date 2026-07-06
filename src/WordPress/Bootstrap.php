@@ -135,17 +135,32 @@ class Bootstrap
         $registry = Registry::getInstance();
         $attributes = $registry->generateBlockAttributes($block);
 
-        register_block_type(
-            $block->name,
-            [
-                'api_version'     => 2,
-                'title'           => $block->title,
-                'icon'            => $block->icon,
-                'attributes'      => $attributes,
-                'render_callback' => [self::class, 'renderBlock'],
-                'editor_script'   => Config::getEditorScriptHandle(),
-            ]
-        );
+        // Build the WP block args. Optional metadata (category/description/
+        // keywords/style) is included only when set, so existing fluent blocks
+        // with defaults behave exactly as before.
+        $args = [
+            'api_version'     => 2,
+            'title'           => $block->title,
+            'icon'            => $block->icon,
+            'attributes'      => $attributes,
+            'render_callback' => [self::class, 'renderBlock'],
+            'editor_script'   => Config::getEditorScriptHandle(),
+        ];
+
+        if ($block->category !== null) {
+            $args['category'] = $block->category;
+        }
+        if ($block->description !== null) {
+            $args['description'] = $block->description;
+        }
+        if ($block->keywords !== []) {
+            $args['keywords'] = $block->keywords;
+        }
+        if ($block->style !== null) {
+            $args['style'] = $block->style;
+        }
+
+        register_block_type($block->name, $args);
     }
 
     /**

@@ -298,7 +298,11 @@ final class Registry
     {
         $loadedFiles = [];
 
-        // Get scan paths from configuration
+        // Only discovery-enabled paths are scanned. Template-only paths
+        // (template_paths, registered via registerTemplatePath() or
+        // registerBlockPath($p, ['discover' => false])) are intentionally
+        // excluded so render templates are never auto-executed as block
+        // definitions.
         $scanPaths = Config::get('block_paths', []);
 
         // Add default plugin path if set

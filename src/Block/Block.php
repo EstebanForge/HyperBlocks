@@ -64,6 +64,34 @@ class Block
     public string $render_template = '';
 
     /**
+     * The block category slug. Null = leave WP default.
+     *
+     * @var string|null
+     */
+    public ?string $category = null;
+
+    /**
+     * Short block description shown in the editor.
+     *
+     * @var string|null
+     */
+    public ?string $description = null;
+
+    /**
+     * Search keywords for the editor inserter.
+     *
+     * @var array<int, string>
+     */
+    public array $keywords = [];
+
+    /**
+     * Registered style handle to enqueue with the block.
+     *
+     * @var string|null
+     */
+    public ?string $style = null;
+
+    /**
      * Constructor.
      *
      * @param string $title The block title.
@@ -237,6 +265,69 @@ class Block
     }
 
     /**
+     * Set the block category slug.
+     *
+     * Pass a registered block category slug (e.g. 'layout', 'widgets') or a
+     * custom one registered via the block_categories_all filter.
+     *
+     * @param string $category The category slug.
+     * @return self
+     */
+    public function setCategory(string $category): self
+    {
+        $this->category = $category;
+
+        return $this;
+    }
+
+    /**
+     * Set the block description shown in the editor.
+     *
+     * @param string $description The description text.
+     * @return self
+     */
+    public function setDescription(string $description): self
+    {
+        $this->description = $description;
+
+        return $this;
+    }
+
+    /**
+     * Set search keywords for the editor inserter.
+     *
+     * @param array<int, string> $keywords One or more keywords.
+     * @return self
+     */
+    public function setKeywords(array $keywords): self
+    {
+        $this->keywords = array_values(array_filter($keywords, 'is_string'));
+
+        return $this;
+    }
+
+    /**
+     * Set the registered style handle to enqueue with the block.
+     *
+     * The handle must be registered separately via wp_register_style.
+     *
+     * Note: this accepts a single handle to match the fluent setters' simple
+     * signatures. WP's block.json `style` field technically accepts an array
+     * of handles; if a block needs multiple stylesheets, register a single
+     * aggregate handle (or extend this API to accept an array in a future
+     * revision).
+     *
+     * @param string $handle The registered style handle.
+     * @return self
+     */
+    public function setStyle(string $handle): self
+    {
+        $this->style = $handle;
+
+        return $this;
+    }
+
+    /**
      * Get the underlying HyperFields adapter for the block's fields.
      *
      * @return array Array of BlockFieldAdapter instances
@@ -265,6 +356,10 @@ class Block
             'fields' => array_map(fn ($f) => $f->toArray(), $this->fields),
             'field_groups' => $this->field_groups,
             'render_template' => $this->render_template,
+            'category' => $this->category,
+            'description' => $this->description,
+            'keywords' => $this->keywords,
+            'style' => $this->style,
         ];
     }
 }

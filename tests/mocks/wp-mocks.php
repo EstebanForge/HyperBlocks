@@ -309,13 +309,49 @@ if (!function_exists('register_rest_route')) {
 if (!function_exists('register_block_type')) {
     /**
      * Mock register_block_type function.
+     *
+     * Captures the last call's (name, args) into HyperBlocks_Testing_Registry
+     * so unit tests can assert on the exact args threaded through by
+     * Bootstrap::registerSingleBlock(). Read via
+     * HyperBlocks_Testing_Registry::getLastBlockRegistration().
      */
     function register_block_type(string $block_name, array $args): WP_Block_Type|false
     {
-        return new class {
-            public string $name = '';
-            public array $args = [];
-        };
+        HyperBlocks_Testing_Registry::recordBlockRegistration($block_name, $args);
+
+        // Return false (a valid per-signature value) rather than a fabricated
+        // WP_Block_Type: the mock has no such class, and unit tests assert on
+        // the recorded args via HyperBlocks_Testing_Registry, not the return.
+        return false;
+    }
+}
+
+/**
+ * Test-only capture helper for the register_block_type mock.
+     *
+ * Lives in the global namespace alongside the mock. Not loaded in production.
+ */
+final class HyperBlocks_Testing_Registry
+{
+    /** @var array{0: string, 1: array} */
+    private static array $last = ['', []];
+
+    public static function recordBlockRegistration(string $name, array $args): void
+    {
+        self::$last = [$name, $args];
+    }
+
+    /**
+     * @return array{0: string, 1: array}
+     */
+    public static function getLastBlockRegistration(): array
+    {
+        return self::$last;
+    }
+
+    public static function reset(): void
+    {
+        self::$last = ['', []];
     }
 }
 

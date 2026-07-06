@@ -161,9 +161,11 @@ class Renderer
             $allowedBases[] = HYPERBLOCKS_PATH;
         }
 
-        // Add registered block paths
-        $blockPaths = Config::get('block_paths', []);
-        foreach ($blockPaths as $path) {
+        // Add registered paths allowed for template resolution. This is
+        // the union of discovery paths (block_paths) and template-only
+        // paths (template_paths), so a template-only registration still
+        // resolves templates without being scanned for block definitions.
+        foreach (Config::getTemplateValidationPaths() as $path) {
             if (is_dir($path)) {
                 $allowedBases[] = $path;
             }

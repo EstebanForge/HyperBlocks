@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.1.7] - 2026-07-06
+
+### Fixed
+- Fluent-API blocks now appear in the Gutenberg inserter and parse correctly in saved post content. Previously `register_block_type` referenced the `hyperblocks-editor` script handle, but the handle was never registered with WordPress and `enqueueEditorScript()` (now `registerEditorScript()`) was a guarded no-op, so the client never ran `wp.blocks.registerBlockType()` and existing block instances surfaced as "This block contains unexpected or invalid content."
+  - Added the missing `assets/js/editor.js` (vanilla JS, no build step): reads `window.hyperBlocksConfig` (injected server-side as `{ name, title, icon }` per block) and registers each block client-side with no-op `edit`/`save`, since blocks remain dynamic and server-rendered via `render_callback`. Guards against duplicate registration via `wp.blocks.getBlockType()`.
+  - Wired `Bootstrap::registerEditorScript()` to **register** (not enqueue) the script when the file exists (the guard now passes). Registering rather than enqueueing is required because the call runs on `init`, which fires on every request including the public front end; enqueueing there would load the Gutenberg bundle (`wp-blocks`, `wp-element`, `wp-components`) on every page. Core enqueues the handle in the editor only, via the existing `editor_script` argument passed to `register_block_type`.
+  - Prefer the canonical `HYPERBLOCKS_PLUGIN_URL` constant for URL resolution so the script loads correctly when HyperBlocks is vendored inside a consumer plugin; cast the `filemtime` version to string; declare `wp-dom-ready` as a dependency since `editor.js` calls `wp.domReady`.
+  - The `wp_add_inline_script` call that seeds `window.hyperBlocksConfig` remains attached to the registered handle and prints in the editor when core enqueues it.
+  - Extended the `tests/mocks/wp-mocks.php` capture helper (added a `wp_register_script` mock alongside the existing enqueue/inline captures) and added `tests/Unit/EditorScriptTest.php` asserting the handle, URL, full dependency list (including `wp-dom-ready`), in-footer flag, inline-config injection, the editor-context-only guarantee (no enqueue call), and the no-block no-registration path.
+
 ## [1.1.6] - 2026-07-06
 
 ### Added

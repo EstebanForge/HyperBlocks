@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.1.5] - 2026-07-06
+## [1.1.6] - 2026-07-06
 
 ### Added
 - Fluent `Block` setters for optional Gutenberg metadata that previously required a `block.json` — `setCategory()`, `setDescription()`, `setKeywords()`, and `setStyle()`. Metadata is forwarded to `register_block_type` only when set, so existing fluent blocks with defaults behave exactly as before. Pure addition, fully backwards compatible.

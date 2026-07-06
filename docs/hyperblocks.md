@@ -395,6 +395,24 @@ add_filter('hyperblocks/blocks/register_fluent_blocks', function (array $files):
 });
 ```
 
+### Editor registration
+
+Fluent blocks are **dynamic**: they are server-rendered through the `render_callback` that `Bootstrap::registerSingleBlock()` wires into `register_block_type()`. To make the editor aware of them (so they appear in the inserter and parse when present in saved post content), HyperBlocks ships a small vanilla-JS file, `assets/js/editor.js`, registered under the `editor_script_handle` (`hyperblocks-editor` by default).
+
+Registration is **register-only, not enqueue**: it happens as a side-effect of `init` block registration (once at least one fluent block exists), and `Bootstrap::registerEditorScript()` calls `wp_register_script()` rather than `wp_enqueue_script()`. This is deliberate — `init` fires on every request, including the public front end, so enqueueing there would leak the Gutenberg bundle (`wp-blocks`, `wp-element`, `wp-components`) onto every page. Instead, the handle is registered with WordPress and core's own `wp_enqueue_registered_block_scripts_and_styles()` enqueues it in the editor context only, driven by the `editor_script` argument that `registerSingleBlock()` passes to `register_block_type()`.
+
+As part of registration, HyperBlocks also injects each block's `{ name, title, icon }` as `window.hyperBlocksConfig` via `wp_add_inline_script(..., 'before')`, attached to the same handle.
+
+`editor.js` then:
+
+- Iterates `window.hyperBlocksConfig`.
+- Skips any block already known to the editor via `wp.blocks.getBlockType(name)` (idempotent across multiple includes).
+- Calls `wp.blocks.registerBlockType(name, { title, icon, edit: () => null, save: () => null })`.
+
+`edit()` and `save()` deliberately return `null`: the editor shows the server-rendered markup, and `save()` returning `null` marks the block as dynamic so WordPress does not store static HTML in `post_content`. The script only makes blocks known and parsable client-side; it adds no interactive editor UI.
+
+**URL resolution**: the script URL is resolved from `HYPERBLOCKS_PLUGIN_URL` (defined in `bootstrap.php`, correct when HyperBlocks is vendored inside a consumer plugin's `vendor/` tree), falling back to `plugins_url()` when the constant is empty.
+
 ---
 
 ## REST API

@@ -246,7 +246,12 @@ class Block
         foreach ($allowedBases as $base) {
             $fullPath = $base . '/' . ltrim($relativePath, '/');
             $real = @realpath($fullPath);
-            if ($real && str_starts_with($real, $base)) {
+            // Containment check requires the base plus a trailing separator.
+            // Without it, str_starts_with('/var/www/blocks-evil/x',
+            // '/var/www/blocks') would treat an unregistered sibling directory
+            // whose name shares a prefix as "inside" the allowed base.
+            $baseWithSep = rtrim($base, '/') . '/';
+            if ($real && ($real === $base || str_starts_with($real, $baseWithSep))) {
                 $valid = true;
                 break;
             }

@@ -257,10 +257,53 @@ class TemplatePathDiscoveryTest extends TestCase
     }
 
     /**
+     * A base reached through a symlink must still validate its own templates.
+     *
+     * The containment check compares realpath-resolved paths on both sides.
+     * Without resolving the base too, a symlinked temp dir (e.g. macOS
+     * /tmp -> /private/tmp) would compare a raw base against a realpath'd
+     * file, never match, and reject every legitimate template. This is the
+     * cross-platform guard for the realpath-base fix.
+     */
+    public function testSymlinkedBaseStillValidatesItsTemplates(): void
+    {
+        $real = realpath($this->tmpRoot) . '/real-base';
+        $link = realpath($this->tmpRoot) . '/link-base';
+        mkdir($real, 0777, true);
+        file_put_contents($real . '/via-symlink.hb.php', '<p class="hb">ok</p>');
+
+        // Symlink creation may be unavailable (permissions, platform). Skip
+        // gracefully rather than fail; the realpath-base fix is exercised on
+        // any environment that can create one.
+        if (!@symlink($real, $link) || !is_link($link)) {
+            $this->markTestSkipped('symlinks not usable on this platform');
+        }
+
+        // Register the symlinked path, not the real one.
+        Config::registerBlockPath($link);
+
+        // Block::validateTemplatePath must resolve the symlink and accept it.
+        $block = Block::make('Sym Block')
+            ->setName('test/sym-block')
+            ->setRenderTemplateFile('via-symlink.hb.php');
+        $this->assertSame('file:via-symlink.hb.php', $block->render_template);
+
+        // Renderer must resolve and render it too.
+        $html = (new Renderer())->render('file:via-symlink.hb.php', []);
+        $this->assertSame('<p class="hb">ok</p>', $html);
+    }
+
+    /**
      * Recursive best-effort fixture cleanup.
      */
     private function rmrf(string $path): void
     {
+        if (is_link($path) || is_file($path)) {
+            @unlink($path);
+
+            return;
+        }
+
         if (!is_dir($path)) {
             return;
         }
@@ -270,10 +313,10 @@ class TemplatePathDiscoveryTest extends TestCase
                 continue;
             }
             $full = $path . '/' . $item;
-            if (is_dir($full)) {
-                $this->rmrf($full);
-            } else {
+            if (is_link($full) || is_file($full)) {
                 @unlink($full);
+            } elseif (is_dir($full)) {
+                $this->rmrf($full);
             }
         }
 

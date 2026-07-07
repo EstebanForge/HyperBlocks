@@ -244,14 +244,27 @@ class Block
 
         $valid = false;
         foreach ($allowedBases as $base) {
-            $fullPath = $base . '/' . ltrim($relativePath, '/');
-            $real = @realpath($fullPath);
+            // Resolve the base through realpath so the containment check
+            // compares canonical paths. Without this, a symlinked base
+            // (e.g. macOS /tmp -> /private/tmp) would never prefix-match
+            // its own realpath-resolved files and reject every legitimate
+            // template. realpath also collapses any remaining traversal in
+            // the base itself.
+            $realBase = realpath($base);
+            if ($realBase === false) {
+                continue;
+            }
+            $fullPath = $realBase . '/' . ltrim($relativePath, '/');
+            $real = realpath($fullPath);
+            if ($real === false) {
+                continue;
+            }
             // Containment check requires the base plus a trailing separator.
             // Without it, str_starts_with('/var/www/blocks-evil/x',
             // '/var/www/blocks') would treat an unregistered sibling directory
             // whose name shares a prefix as "inside" the allowed base.
-            $baseWithSep = rtrim($base, '/') . '/';
-            if ($real && ($real === $base || str_starts_with($real, $baseWithSep))) {
+            $baseWithSep = rtrim($realBase, '/') . '/';
+            if ($real === $realBase || str_starts_with($real, $baseWithSep)) {
                 $valid = true;
                 break;
             }

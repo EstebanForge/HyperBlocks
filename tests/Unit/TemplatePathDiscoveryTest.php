@@ -198,6 +198,65 @@ class TemplatePathDiscoveryTest extends TestCase
     }
 
     /**
+     * Pins the discovery glob's one-level-deep bound as intentional.
+     *
+     * Native PHP glob() has no globstar: the ** segment matches a single
+     * path component. discoverAndLoadFluentBlocks() therefore discovers
+     * ONLY files at <base>/<dir>/<file> and never files directly in <base>
+     * or nested 2+ levels deep. This bound is load-bearing: it keeps render
+     * templates stored at the top of a registered path (e.g. the project's
+     * own examples/blocks/*.hb.php) from being auto-executed as block
+     * definitions. If this test starts failing because discovery became
+     * recursive, that is a breaking change requiring a major-version bump.
+     */
+    public function testDiscoveryGlobIsOneLevelDeepOnly(): void
+    {
+        Config::registerBlockPath($this->discDir);
+
+        // lvl0: directly in the base. Must NOT be discovered.
+        file_put_contents(
+            $this->discDir . '/lvl0.hb.php',
+            "<?php\n\$GLOBALS['__hb_disc_canary'] = (\$GLOBALS['__hb_disc_canary'] ?? 0) + 100;\n"
+        );
+        // lvl2: two levels deep. Must NOT be discovered.
+        $lvl2 = $this->discDir . '/sub/deep';
+        mkdir($lvl2, 0777, true);
+        file_put_contents(
+            $lvl2 . '/lvl2.hb.php',
+            "<?php\n\$GLOBALS['__hb_disc_canary'] = (\$GLOBALS['__hb_disc_canary'] ?? 0) + 1000;\n"
+        );
+
+        $loaded = Registry::getInstance()->discoverAndLoadFluentBlocks();
+
+        // Only the lvl1 canary is discovered.
+        $this->assertContains($this->discDir . '/sub/canary.hb.php', $loaded);
+        $this->assertNotContains($this->discDir . '/lvl0.hb.php', $loaded);
+        $this->assertNotContains($lvl2 . '/lvl2.hb.php', $loaded);
+
+        // The lvl0/lvl2 side-effects never fired (only the lvl1 canary did).
+        $this->assertSame(1, $GLOBALS['__hb_disc_canary'] ?? null);
+    }
+
+    /**
+     * Trailing-slash variance on registration collapses to a single entry.
+     * array_unique is string-only, so normalization on store is what makes
+     * /foo/bar and /foo/bar/ dedup as the same path.
+     */
+    public function testPathNormalizationDedupsTrailingSlashes(): void
+    {
+        Config::registerBlockPath($this->discDir . '/');
+        Config::registerBlockPath($this->discDir);
+        Config::registerTemplatePath($this->tplDir . '//');
+        Config::registerTemplatePath($this->tplDir);
+
+        $this->assertCount(1, Config::getBlockPaths(), 'block_paths must dedup trailing-slash variants');
+        $this->assertCount(1, Config::getTemplatePaths(), 'template_paths must dedup trailing-slash variants');
+
+        $union = Config::getTemplateValidationPaths();
+        $this->assertSame(count(array_unique($union)), count($union), 'validation paths must be deduplicated');
+    }
+
+    /**
      * Recursive best-effort fixture cleanup.
      */
     private function rmrf(string $path): void

@@ -178,6 +178,11 @@ class Config
         $discover = $options['discover'] ?? true;
         $key = $discover ? 'block_paths' : 'template_paths';
 
+        // Normalize: strip trailing slashes so /foo/bar and /foo/bar/ dedup
+        // as the same path (array_unique is string-only and would otherwise
+        // keep both, inflating the allowlist).
+        $path = rtrim($path, '/\\');
+
         // Add to the target path array if not already present
         $paths = self::$config[$key] ?? [];
         if (!in_array($path, $paths, true)) {
@@ -338,83 +343,5 @@ class Config
     {
         self::$config = array_merge(self::DEFAULTS, $config);
         self::$loaded = true;
-    }
-
-    /**
-     * Validate configuration values.
-     *
-     * @param array $config The configuration to validate.
-     * @return bool True if valid.
-     */
-    public static function validate(array $config): bool
-    {
-        // Validate block_paths
-        if (isset($config['block_paths'])) {
-            if (!is_array($config['block_paths'])) {
-                return false;
-            }
-            foreach ($config['block_paths'] as $path) {
-                if (!is_string($path) || !is_dir($path)) {
-                    return false;
-                }
-            }
-        }
-
-        // Validate template_paths (same rules as block_paths)
-        if (isset($config['template_paths'])) {
-            if (!is_array($config['template_paths'])) {
-                return false;
-            }
-            foreach ($config['template_paths'] as $path) {
-                if (!is_string($path) || !is_dir($path)) {
-                    return false;
-                }
-            }
-        }
-
-        // Validate template_extensions
-        if (isset($config['template_extensions'])) {
-            if (!is_string($config['template_extensions'])) {
-                return false;
-            }
-            $extensions = array_map('trim', explode(',', $config['template_extensions']));
-            foreach ($extensions as $ext) {
-                if (!str_starts_with($ext, '.')) {
-                    return false;
-                }
-            }
-        }
-
-        // Validate rest_namespace
-        if (isset($config['rest_namespace'])) {
-            if (!is_string($config['rest_namespace']) || !preg_match('/^[a-z0-9-]+\/v[0-9]+$/', $config['rest_namespace'])) {
-                return false;
-            }
-        }
-
-        // Validate boolean flags
-        $booleanKeys = ['auto_discovery', 'debug', 'cache_blocks'];
-        foreach ($booleanKeys as $key) {
-            if (isset($config[$key]) && !is_bool($config[$key])) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Save configuration to database.
-     *
-     * @param array $config The configuration to save.
-     * @return bool True if saved successfully.
-     */
-    public static function save(array $config): bool
-    {
-        if (!self::validate($config)) {
-            return false;
-        }
-
-        return update_option('hyperblocks_options', $config);
     }
 }

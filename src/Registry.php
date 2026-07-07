@@ -326,7 +326,16 @@ final class Registry
                 continue;
             }
 
-            // Find all files matching allowed extensions
+            // Find all files matching allowed extensions, one directory
+            // level beneath each base path. Native PHP glob() has no
+            // globstar: the ** segment matches a single path component, so
+            // this intentionally discovers ONLY files at basePath/<dir>/file
+            // and never files directly in basePath or nested 2+ levels deep.
+            // That bound is load-bearing: it keeps render templates stored at
+            // the top of a registered path (e.g. the project's own
+            // examples/blocks/*.hb.php) from being auto-executed as block
+            // definitions. Pinning this behavior via tests; do not make it
+            // recursive without a major-version bump and a migration guide.
             $fluentBlockFiles = [];
             $exts = array_map('trim', explode(',', Config::get('template_extensions', '.hb.php,.php')));
             foreach ($exts as $ext) {

@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+- Template-path validation is now decoupled from block auto-discovery. Previously `Config::registerBlockPath()` drove both behaviors from a single `block_paths` key: a directory registered merely so `Block::setRenderTemplateFile()` could resolve render templates stored there was also globbed by `Registry::discoverAndLoadFluentBlocks()` and every `.hb.php`/`.php` in it was `require_once`d as a block definition on `init`, fatalling when a template expected a render context (`TypeError: Cannot access offset of type string on string`). The split is additive and strictly backwards-compatible: `block_paths` keeps its current meaning (discovery + validation), and a new `template_paths` set is validation-only and never scanned.
+  - `Config::registerBlockPath($path)` (no options) is unchanged: discovery + validation.
+  - `Config::registerBlockPath($path, ['discover' => false])` registers for validation only.
+  - `Config::registerTemplatePath($path)` is a one-liner equivalent of the above.
+  - `Config::getTemplatePaths()` returns validation-only paths; `Config::getTemplateValidationPaths()` returns the deduplicated union (of `block_paths` + `template_paths`) used by `Block::validateTemplatePath()` and `Renderer::validateTemplatePath()`, so a template-only registration still resolves templates while staying out of the discovery glob.
+  - `Registry::discoverAndLoadFluentBlocks()` reads `block_paths` only; the intent is now documented at the scan site.
+  - Added the `hyperblocks_register_template_path()` procedural helper.
+  - Registered paths are now normalized (trailing slashes stripped) so `/foo/bar` and `/foo/bar/` collapse to one entry instead of inflating the allowlist.
+  - The discovery glob's one-level-deep bound (native PHP `glob()` has no globstar, so the pattern matches `base/<dir>/<file>` only; files directly in the base or nested two-plus levels deep are not discovered) is now documented as intentional and pinned by a regression test. Making discovery recursive would re-introduce the fatal class this change eliminates and requires a major-version bump.
+  - Removed `Config::validate()` and `Config::save()` (and their `ConfigTest` cases): both were unreachable dead code (`validate()` was only called by `save()`, which had zero callers). Re-add with coverage together if config validation is needed later.
+  - Added `tests/Unit/TemplatePathDiscoveryTest.php` covering the template-only, default-discovery, `discover => false`, union/dedup, one-level-deep, and trailing-slash-normalization cases.
+
 ## [1.1.7] - 2026-07-06
 
 ### Fixed

@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.1.8] - 2026-07-06
+## [1.1.9] - 2026-07-06
 
 ### Security
 - Hardened the path-containment check in `Block::validateTemplatePath()` and `Renderer::validateTemplatePath()`. Both used `str_starts_with($real, $base)` without a trailing separator, so a registered base like `/var/www/blocks` incorrectly treated an unregistered sibling directory `/var/www/blocks-evil` as "inside" the allowed base. `Renderer::validateTemplatePath()` was the reachable vector: an absolute `file:` path skips the relative-resolution loop and lands directly in the prefix check, so a crafted absolute path into a prefix-colliding sibling directory would render an arbitrary file. The check now requires the base plus a trailing separator (and accepts an exact match on the base itself). `Block::validateTemplatePath()` was mitigated in practice by its `..` rejection (no way to reach a sibling without `..`), but is fixed too for defense-in-depth. Added `tests/Unit/RendererTemplatePathSecurityTest.php` proving the sibling-prefix escape via `Renderer::render()` is rejected and that legitimate relative templates still render.

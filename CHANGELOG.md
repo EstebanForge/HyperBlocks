@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.3] - 2026-07-23
+
+### Fixed
+- **Dynamic blocks now wrap their editor preview in `useBlockProps()`, restoring block selection, focus, and `supports.*` features (align, anchor, `customClassName`) in the editor.** The 1.3.2 ServerSideRender fix rendered the server markup but skipped the `useBlockProps()` wrapper that core's own dynamic blocks apply. Without it, those editor features silently failed (no block-selection chrome, no alignment controls) the moment a fluent block declared a `supports.*` feature, and the same wiring becomes mandatory under block apiVersion 3. The editor output is now `<div {...useBlockProps()}><ServerSideRender /></>`, matching the canonical WordPress dynamic-block pattern. The `wp-block-editor` package (which provides `useBlockProps`) was added to the editor script dependencies.
+
+### Changed
+- `docs/hyperblocks.md` updated to describe the ServerSideRender + useBlockProps editor behavior; the prior text incorrectly documented `edit() => null` as intentional design.
+
 ## [1.3.2] - 2026-07-23
 
 ### Fixed

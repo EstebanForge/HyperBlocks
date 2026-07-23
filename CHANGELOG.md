@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.3.2] - 2026-07-23
+
+### Fixed
+- **Dynamic fluent blocks now render their server-side markup in the editor canvas instead of appearing as a blank placeholder.** The editor script registered every fluent block with `edit: () => null`, on the assumption that the editor would automatically display the server-rendered output produced by the block's `render_callback`. That assumption was wrong: WordPress does not auto-render a dynamic block's `render_callback` inside the editor, so a fluent block that appeared in the inserter and rendered correctly on the front end showed nothing when inserted into a post. The editor now uses the canonical WordPress dynamic-block pattern, fetching the server-rendered HTML via the `ServerSideRender` component (the same mechanism used by WooCommerce, Gravity Forms, and ACF dynamic blocks). Each block instance makes one REST call to render its preview, which is the standard cost of a dynamic block in Gutenberg. `save()` continues to return `null` because dynamic blocks emit no static markup; the stored block comment is re-rendered server-side on the front end via the `render_callback`. The editor script gained `wp-server-side-render` as a dependency so the component is available when `edit()` runs.
+
 ## [1.3.1] - 2026-07-23
 
 ### Fixed

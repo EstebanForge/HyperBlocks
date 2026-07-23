@@ -50,10 +50,17 @@
                 // server-side via the render_callback on the front end.
                 edit: function (props) {
                     var el = window.wp.element.createElement;
-                    return el(window.wp.serverSideRender, {
+                    // useBlockProps wires block selection, focus, and the
+                    // supports.* features (align, anchor, customClassName) the
+                    // editor applies to the block wrapper. Without it those
+                    // features silently fail and, under apiVersion 3, the block
+                    // breaks entirely. Core's own dynamic blocks wrap their
+                    // ServerSideRender output in useBlockProps.
+                    var blockProps = window.wp.blockEditor.useBlockProps();
+                    return el('div', blockProps, el(window.wp.serverSideRender, {
                         block: props.name,
                         attributes: props.attributes
-                    });
+                    }));
                 },
                 save: function () {
                     return null;

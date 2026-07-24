@@ -25,7 +25,7 @@ HyperBlocks also triggers HyperFields initialization in the same `bootstrap.php`
 
 ### Consumers MUST directly require `automattic/jetpack-autoloader`
 
-**Non-obvious gate (caused the OBA staging outage).** Jetpack's manifest is
+**Non-obvious gate (caused a staging outage).** Jetpack's manifest is
 only generated when `automattic/jetpack-autoloader` is a **direct** require of
 *your* plugin's `composer.json`. Transitive presence (pulled in via the Hyper
 libraries) does **not** trigger adoption — Jetpack installs but stays inert,

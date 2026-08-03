@@ -105,7 +105,7 @@ class Bootstrap
 
 ## Monorepo / Bedrock / symlinked plugins
 
-In setups where the plugins directory is outside the standard `wp-content/plugins` path, or where plugin directories are symlinks, asset URLs resolve against the web-accessible WordPress content roots (plugins, mu-plugins, content, active theme dirs). When the library sits outside every content root (e.g. a Bedrock root composer vendor outside the document root), `Config::$pluginUrl` is `''` and the editor-asset enqueue bails instead of emitting a 404ing URL; fluent blocks still render on the front end but will not appear in the inserter.
+In setups where the plugins directory is outside the standard `wp-content/plugins` path, or where plugin directories are symlinks, asset URLs resolve against the web-accessible WordPress content roots (plugins, mu-plugins, content, active theme dirs). When a copy sits outside every content root (e.g. a Bedrock root composer vendor outside the document root), `Bootstrap::init()` **defers**: it returns without claiming the `LOADED` identity or writing `Config::$pluginUrl`, so a web-reachable copy bundled inside a plugin under `wp-content/` is free to win and serve the editor script. Only if no reachable copy claims the identity does the editor-asset enqueue bail (fluent blocks still render on the front end but will not appear in the inserter). An explicit `plugin_url` arg forces a copy to claim even when the resolver cannot infer its URL.
 
 ```
 web/app/plugins/my-plugin/     <- WP registration (may be a symlink)

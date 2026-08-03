@@ -29,7 +29,7 @@ class Bootstrap
      *
      * @return void
      */
-    public static function init(array $args = []): void
+    public static function init(): void
     {
         // Cross-copy election guard (Carbon Fields pattern). The first copy
         // of HyperBlocks to reach init() claims a namespace-scoped constant
@@ -46,43 +46,23 @@ class Bootstrap
             return;
         }
 
-        // Runtime identity (prefix-safe). Mirrors HyperFields\Config: these
-        // hold per-copy paths/URL so a prefixed copy
-        // (ConsumerX\...\HyperBlocks\Config) is fully isolated from any other
-        // consumer's copy. Replaces the former global HYPERBLOCKS_* constants.
-        // Optional $args lets consumers/tests override base_dir/plugin_url
-        // (mirrors HyperFields\LibraryBootstrap::init()).
-        $base_dir = isset($args['base_dir'])
-            ? trailingslashit((string) $args['base_dir'])
-            : trailingslashit(dirname(__DIR__, 2));
-        $plugin_url = isset($args['plugin_url'])
-            ? trailingslashit((string) $args['plugin_url'])
-            : self::resolvePluginUrl($base_dir);
-
-        // Defer when this copy is not under a web-reachable WP content root.
-        // Defining the namespace-scoped LOADED identity here would lock out a
-        // web-reachable copy (e.g. one bundled inside a plugin under
-        // wp-content) and leave Config::\$pluginUrl empty, so its editor
-        // script would not register and fluent blocks would vanish from the
-        // inserter. The common trigger is this library installed transitively
-        // into a Bedrock-style root composer vendor, outside the web document
-        // root; a web-reachable copy will run init() and claim the identity
-        // instead. An explicit plugin_url argument overrides the deferral so
-        // a consumer can force a copy the resolver cannot infer. Mirrors
-        // HyperFields\LibraryBootstrap::init().
-        if (!isset($args['plugin_url']) && $plugin_url === '') {
-            return;
-        }
-
         define(__NAMESPACE__ . '\\LOADED', __DIR__);
 
         if (Config::isInitialized()) {
             return;
         }
 
+        // Runtime identity (prefix-safe). Mirrors HyperFields\Config: these
+        // hold per-copy paths/URL so a prefixed copy
+        // (ConsumerX\...\HyperBlocks\Config) is fully isolated from any other
+        // consumer's copy. Replaces the former global HYPERBLOCKS_* constants.
+        $base_dir = trailingslashit(dirname(__DIR__, 2));
+        $plugin_file = $base_dir . 'bootstrap.php';
+        $plugin_url = self::resolvePluginUrl($base_dir);
+
         Config::markInitialized();
         Config::$abspath = $base_dir;
-        Config::$pluginFile = $base_dir . 'bootstrap.php';
+        Config::$pluginFile = $plugin_file;
         Config::$pluginUrl = $plugin_url;
 
         // Load the procedural helper API. Loaded here (after ABSPATH is

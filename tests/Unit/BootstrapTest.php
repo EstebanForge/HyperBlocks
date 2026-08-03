@@ -117,25 +117,4 @@ class BootstrapTest extends TestCase
         $this->assertArrayNotHasKey('keywords', $args);
         $this->assertArrayNotHasKey('style', $args);
     }
-
-    /**
-     * A copy that is not under a web-reachable WP content root (e.g. a Bedrock
-     * root composer vendor) must defer at init() without claiming the
-     * namespace-scoped LOADED guard, so a web-reachable copy bundled inside a
-     * plugin under wp-content can still win. Runs without process isolation:
-     * this test never defines LOADED (it asserts the deferral), so it neither
-     * depends on nor affects other tests. Mirrors HyperFields; the explicit
-     * plugin_url override path is covered by HyperFields' LibraryBootstrapTest.
-     */
-    public function testInitDefersWhenNotWebReachable(): void
-    {
-        $base_dir = sys_get_temp_dir() . '/bedrock-app/vendor/estebanforge/hyperblocks/';
-
-        Bootstrap::init(['base_dir' => $base_dir]);
-
-        $this->assertFalse(
-            defined('HyperBlocks\\WordPress\\LOADED'),
-            'A non-web-reachable copy must defer and not define the LOADED guard; a web-reachable copy must be free to claim it.'
-        );
-    }
 }

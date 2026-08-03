@@ -30,6 +30,14 @@ HyperBlocks' `bootstrap.php` is included via Composer `autoload.files`. It also 
 
 **Requirements**: PHP 8.2+, WordPress latest.
 
+### Bedrock / Composer-managed WordPress sites
+
+When this library is installed **transitively** into a Bedrock-style project, Composer places it in the project **root `vendor/`** (outside `wp-content/`), because the package is `type: library` and Bedrock's `installer-paths` only route `wordpress-plugin` / `wordpress-muplugin` / `wordpress-theme` types. That root-vendor copy is not under any web-accessible WordPress content root, so its `assets/js/editor.js` cannot be served over HTTP, and a `files`-autoloaded `bootstrap.php` running from there would claim the library identity with an empty asset URL (fluent blocks then never register in the inserter).
+
+`WordPress\Bootstrap::init()` therefore **defers** when it cannot resolve a web URL: it returns without claiming the namespace-scoped `LOADED` guard or writing `Config::$pluginUrl`, leaving a web-reachable copy (one bundled inside a plugin under `wp-content/`) free to claim the identity and serve the editor script. An explicit `plugin_url` entry in the `$args` passed to `init()` overrides the deferral when a consumer knows the URL but the resolver cannot infer it.
+
+**Recommended pattern for plugins that bundle HyperBlocks:** ship it inside the plugin's own committed `vendor/` (e.g. `wp-content/plugins/<your-plugin>/vendor/estebanforge/hyperblocks/`) and load the plugin's own `vendor/autoload.php`. That copy is web-reachable and wins. Do not rely on a Bedrock root-vendor copy to serve assets; it never can. Symptom of the problem: a log line like *"editor script ... is not reachable from any web-accessible WordPress content root"*.
+
 ---
 
 ## Development Commands

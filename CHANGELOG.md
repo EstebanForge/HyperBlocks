@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.4.1] - 2026-08-03
+## [1.4.2] - 2026-08-03
 
 ### Changed
 - Dependencies updated.

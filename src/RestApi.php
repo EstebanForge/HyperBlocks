@@ -307,6 +307,8 @@ class RestApi
             ];
         }
 
+        $attributes = $this->sanitizeJsonBlockAttributes($attributes, $metadata['attributes'] ?? []);
+
         try {
             $renderer = new Renderer();
             $html = $renderer->render('file:' . $renderFile, $attributes);
@@ -315,7 +317,7 @@ class RestApi
                 'success' => true,
                 'html' => $html,
             ];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return [
                 'success' => false,
                 'error' => 'Rendering failed: ' . $e->getMessage(),
@@ -334,6 +336,31 @@ class RestApi
         $registry = Registry::getInstance();
 
         return $registry->findJsonBlockPath($blockName);
+    }
+
+    /**
+     * Sanitize JSON block attributes by their declared block.json types.
+     *
+     * @param array $attributes      Incoming attributes from the REST request.
+     * @param array $declaredAttributes block.json attribute type declarations.
+     * @return array Sanitized attributes.
+     */
+    private function sanitizeJsonBlockAttributes(array $attributes, array $declaredAttributes): array
+    {
+        $sanitized = [];
+
+        foreach ($attributes as $name => $value) {
+            $type = $declaredAttributes[$name]['type'] ?? 'string';
+
+            $sanitized[$name] = match ($type) {
+                'integer', 'number' => is_numeric($value) ? $value + 0 : 0,
+                'boolean' => (bool) $value,
+                'string' => sanitize_text_field((string) $value),
+                default => is_array($value) ? array_map('sanitize_text_field', $value) : sanitize_text_field((string) $value),
+            };
+        }
+
+        return $sanitized;
     }
 
     /**

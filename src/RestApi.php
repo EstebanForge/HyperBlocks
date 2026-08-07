@@ -350,17 +350,36 @@ class RestApi
         $sanitized = [];
 
         foreach ($attributes as $name => $value) {
-            $type = $declaredAttributes[$name]['type'] ?? 'string';
+            $declaration = $declaredAttributes[$name] ?? [];
+            $type = $declaration['type'] ?? 'string';
+            $source = $declaration['source'] ?? '';
 
             $sanitized[$name] = match ($type) {
                 'integer', 'number' => is_numeric($value) ? $value + 0 : 0,
                 'boolean' => (bool) $value,
-                'string' => sanitize_text_field((string) $value),
-                default => is_array($value) ? array_map('sanitize_text_field', $value) : sanitize_text_field((string) $value),
+                'string' => $source === 'html'
+                    ? wp_kses_post((string) $value)
+                    : sanitize_text_field((string) $value),
+                default => $this->sanitizeNestedValue($value),
             };
         }
 
         return $sanitized;
+    }
+
+    /**
+     * Recursively sanitize a nested array or scalar value.
+     *
+     * @param mixed $value The value to sanitize.
+     * @return mixed The sanitized value.
+     */
+    private function sanitizeNestedValue(mixed $value): mixed
+    {
+        if (is_array($value)) {
+            return array_map([$this, 'sanitizeNestedValue'], $value);
+        }
+
+        return sanitize_text_field((string) $value);
     }
 
     /**

@@ -14,9 +14,11 @@ use HyperBlocks\RestApi;
 it('returns error HTML instead of fataling when a template throws a TypeError', function (): void {
     $renderer = new Renderer();
 
+    $level = ob_get_level();
     $html = $renderer->render('<?php throw new \TypeError("template boom"); ?>', []);
 
     expect($html)->toContain('hyperblocks-error');
+    expect(ob_get_level())->toBe($level);
 });
 
 /*
@@ -35,6 +37,7 @@ it('sanitizes JSON block preview attributes by their declared types', function (
         'count' => ['type' => 'number'],
         'visible' => ['type' => 'boolean'],
         'items' => ['type' => 'array'],
+        'nested' => ['type' => 'array'],
     ];
 
     $result = $method->invoke($api, [
@@ -43,6 +46,7 @@ it('sanitizes JSON block preview attributes by their declared types', function (
         'count' => '42',
         'visible' => 1,
         'items' => ['<b>one</b>', '<i>two</i>'],
+        'nested' => [['<b>x</b>'], ['<i>y</i>']],
     ], $declared);
 
     // Plain string: tags stripped.
@@ -57,4 +61,6 @@ it('sanitizes JSON block preview attributes by their declared types', function (
     expect($result['visible'])->toBeTrue();
     // Nested array: recursively sanitized (no TypeError).
     expect($result['items'])->toBe(['one', 'two']);
+    // Multi-level nested array: recursion verified (flat array_map would fail this).
+    expect($result['nested'])->toBe([['x'], ['y']]);
 });

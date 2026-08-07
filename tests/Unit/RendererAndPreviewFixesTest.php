@@ -21,6 +21,13 @@ it('returns error HTML instead of fataling when a template throws a TypeError', 
     expect(ob_get_level())->toBe($level);
 });
 
+it('preserves level attribute in template scope without overwriting', function (): void {
+    $renderer = new Renderer();
+    $html = $renderer->render('<?php echo "heading-level-" . $level; ?>', ['level' => 3]);
+
+    expect($html)->toBe('heading-level-3');
+});
+
 /*
  * Finding 3.2: JSON block preview attributes are sanitized by their declared
  * block.json types before rendering. String attributes with source:html use

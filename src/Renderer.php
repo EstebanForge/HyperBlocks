@@ -249,7 +249,7 @@ class Renderer
             // Extract attributes as variables for template use
             extract($__attributes, EXTR_SKIP);
 
-            $level = ob_get_level();
+            $__ob_level = ob_get_level();
 
             // Start output buffering
             ob_start();
@@ -263,7 +263,7 @@ class Renderer
             } catch (\Throwable $e) {
                 // Template threw: unwind all buffer levels opened since the
                 // baseline so nested ob_start calls in the template do not leak.
-                while (ob_get_level() > $level) {
+                while (ob_get_level() > $__ob_level) {
                     ob_end_clean();
                 }
                 throw $e;

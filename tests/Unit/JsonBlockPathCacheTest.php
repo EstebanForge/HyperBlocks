@@ -112,22 +112,21 @@ class JsonBlockPathCacheTest extends TestCase
     }
 
     /**
-     * Repeated lookups for distinct unknown names must not cache the misses,
-     * or a caller submitting many names could grow the map without bound. Only
-     * positive results are cached.
+     * Lookups for unknown names cache negative results up to a bounded cap,
+     * preventing redundant disk rescans for identical misses while bounding memory.
      */
-    public function testRepeatedDistinctMissesDoNotGrowTheCache(): void
+    public function testNegativeLookupsAreCachedAndBounded(): void
     {
         Config::registerBlockPath($this->scanDir);
         $registry = Registry::getInstance();
 
         $this->assertNull($registry->findJsonBlockPath('nope/one'));
-        $this->assertNull($registry->findJsonBlockPath('nope/two'));
-        $this->assertNull($registry->findJsonBlockPath('nope/three'));
+        $this->assertNull($registry->findJsonBlockPath('nope/one')); // Cache hit
 
         $cache = (new \ReflectionProperty(Registry::class, 'jsonBlockPathCache'))
             ->getValue($registry);
-        $this->assertSame([], $cache, 'misses must not be cached');
+        $this->assertArrayHasKey('nope/one', $cache);
+        $this->assertNull($cache['nope/one']);
     }
 
     private function writeBlockJson(string $dir, array $payload): void

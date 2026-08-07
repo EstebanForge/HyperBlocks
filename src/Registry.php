@@ -379,6 +379,7 @@ final class Registry
                     $fluentBlockFiles = array_merge($fluentBlockFiles, $files);
                 }
             }
+            $fluentBlockFiles = array_unique($fluentBlockFiles);
 
             foreach ($fluentBlockFiles as $file) {
                 // Skip files in directories starting with underscore
@@ -526,8 +527,8 @@ final class Registry
     public function findJsonBlockPath(string $blockName): ?string
     {
         // O(1) lookup once init discovery has populated the name -> path map.
-        // See registerJsonBlockFromPath(). Misses are deliberately not cached
-        // so varied bogus names cannot grow the map.
+        // See registerJsonBlockFromPath(). Misses are cached up to a 100-entry bound
+        // to prevent redundant disk rescans while capping memory growth.
         if (array_key_exists($blockName, $this->jsonBlockPathCache)) {
             return $this->jsonBlockPathCache[$blockName];
         }
@@ -571,6 +572,10 @@ final class Registry
                     }
                 }
             }
+        }
+
+        if (count($this->jsonBlockPathCache) < 100) {
+            $this->jsonBlockPathCache[$blockName] = null;
         }
 
         return null;

@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.5.1] - 2026-08-09
+## [1.5.3] - 2026-08-09
 
 ### Security
 - **Block field and preview REST routes are permission-gated.** The JSON block path lookup is now cached and bounded, and the `/block-fields` and preview endpoints verify the caller can edit posts before exposing field or preview data.

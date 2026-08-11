@@ -19,6 +19,29 @@ The guard is built with `__NAMESPACE__`, so it is prefix-safe: unprefixed copies
 
 `bootstrap.php` also triggers HyperFields' bootstrap from the vendored copy when running standalone, so requiring `estebanforge/hyperblocks` is the only step needed; you do not bootstrap HyperFields separately.
 
+### Auto-bootstrap is best-effort
+
+Step 2 above (scheduling `init()` at `after_setup_theme`) depends on
+`add_action()` being available when `bootstrap.php` runs. It can silently
+no-op when the Composer autoloader is pulled in before `wp-includes/plugin.php`
+loads (for example, by a drop-in such as `object-cache.php`, a must-use plugin,
+or `wp-config.php`). In that case `bootstrap.php` is included, the
+`hyperblocks_bootstrap_init` function is defined, but its
+`after_setup_theme` registration is skipped and `init()` never runs. No error
+is raised; `Config::isInitialized()` stays `false`, and the only outward signs
+are blocks missing from the inserter and dead subsystem features.
+
+The editor-asset enqueue self-heals regardless, because it resolves its URL
+from the library's own root via `HyperFields\LibraryBootstrap::resolveContentUrl()`
+when `Config::$pluginUrl` is empty. Block registration, the REST API, and the
+other subsystems do **not** self-heal; only an executed `init()` brings them
+up.
+
+For this reason, calling `\HyperBlocks\WordPress\Bootstrap::init()` explicitly
+after your autoloader (see *Manually triggering initialization* below) is the
+supported contract. It is idempotent, election-guarded, and removes all
+dependence on the auto-bootstrap timing.
+
 Runtime identity lives on `HyperBlocks\Config` (prefix-safe), not global constants:
 
 - `Config::VERSION` - semantic version (mirrors `composer.json`)

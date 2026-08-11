@@ -31,16 +31,22 @@ if (class_exists('\HyperBlocks\WordPress\Bootstrap')) {
 }
 ```
 
-HyperBlocks ships a `bootstrap.php` (registered under Composer `autoload.files`)
-that *attempts* to self-initialize at `after_setup_theme`, and chains into the
-bundled HyperFields bootstrap. That auto-bootstrap is best-effort: it can
-silently no-op when the autoloader is pulled in before `add_action()` exists
-(for example, by an early drop-in or must-use plugin), leaving `Config` and the
-block-registration subsystems uninitialized. Calling
-`WordPress\Bootstrap::init()` explicitly after your autoloader is the
-supported, deterministic contract. It is idempotent and safe under the
-cross-copy election guard. See [`docs/library-bootstrap.md`](docs/library-bootstrap.md)
-for the full guide and failure modes.
+HyperBlocks self-initializes (zero-config). Its `bootstrap.php` is a Composer
+`autoload.files` entry that schedules `WordPress\Bootstrap::init()` at
+`after_setup_theme` (priority 0), and chains into the bundled HyperFields
+bootstrap so both libraries come up together. This works across every WordPress
+load order, including the Bedrock and WP-CLI early-load windows where
+`add_action()` is not yet available: there the bootstrap writes the registration
+straight into `$GLOBALS['wp_filter']` in WordPress' preinitialized-hooks format,
+which core converts into a real hook when `plugin.php` loads
+(`WP_Hook::build_preinitialized_hooks`, since WP 4.7). You do not need to call
+`init()` yourself.
+
+Calling `WordPress\Bootstrap::init()` explicitly is still supported as an
+optional deterministic override. It is idempotent and safe under the cross-copy
+election guard. See [`docs/library-bootstrap.md`](docs/library-bootstrap.md)
+for the full guide, the Bedrock dual-copy note, and the explicit-override
+contract.
 
 ## Quick start
 

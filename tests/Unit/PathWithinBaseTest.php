@@ -63,4 +63,23 @@ final class PathWithinBaseTest extends TestCase
             hb_path_within_base('C:\\www\\site\\blocks/sub/tpl.php', 'C:\\www\\site\\blocks')
         );
     }
+
+    public function testAcceptsLowercaseDriveLetterMismatch(): void
+    {
+        // wp_normalize_path() ucfirst()s the drive letter; both sides of the
+        // comparison go through it, so a lowercase-drive realpath output
+        // must still match an uppercase-drive base.
+        $this->assertTrue(
+            hb_path_within_base('c:/www/site/blocks/tpl.php', 'C:\\www\\site\\blocks')
+        );
+    }
+
+    public function testCollapsesDoubledSeparators(): void
+    {
+        // Real wp_normalize_path() collapses redundant slashes; the helper
+        // must not let a doubled separator break the containment match.
+        $this->assertTrue(
+            hb_path_within_base('C:\\www\\site\\blocks//tpl.php', 'C:/www/site/blocks')
+        );
+    }
 }

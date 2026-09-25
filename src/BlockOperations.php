@@ -69,12 +69,13 @@ final class BlockOperations
      *
      * @param string $blockName  Block name (namespace/slug).
      * @param array  $attributes Incoming attributes; sanitized before rendering.
+     * @param string $content    Inner-blocks markup injected at <InnerBlocks /> markers.
      * @return array{status: string, html: string, error: string, rest_status: int}
      *                status: ok | no_template | not_found | error. rest_status
      *                carries the HTTP status the REST layer should map to; the
      *                Abilities layer ignores it.
      */
-    public static function preview(string $blockName, array $attributes): array
+    public static function preview(string $blockName, array $attributes, string $content = ''): array
     {
         $registry = Registry::getInstance();
         $block = $registry->getFluentBlock($blockName);
@@ -120,7 +121,7 @@ final class BlockOperations
 
                 // Use the renderer to generate preview HTML
                 $renderer = new Renderer();
-                $html = $renderer->render($block->render_template, $attributes);
+                $html = $renderer->render($block->render_template, $attributes, $content);
 
                 return ['status' => 'ok', 'html' => $html, 'error' => '', 'rest_status' => 200];
             } catch (\Throwable $e) {

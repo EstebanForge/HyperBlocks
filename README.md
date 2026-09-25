@@ -174,7 +174,7 @@ Template (`blocks/pricing-card.hb.php`):
 </section>
 ```
 
-In the editor the block renders its server template with the nested-block area live inside it; the nested content is stored with the block and injected at the marker on the front end. `allowedBlocks` and `templateLock` are editor-side constraints only. Full semantics and caveats: [AGENTS.md](AGENTS.md).
+In the editor the block renders its server template with the nested-block area live inside it; the nested content is stored with the block and injected at the marker on the front end. The template must contain the `<InnerBlocks />` marker: a slotted block whose template lacks it drops nested content on the front end (the editor console warns once). Preview `content` is sanitized through `wp_kses_post`. `allowedBlocks` and `templateLock` are editor-side constraints only. Full semantics and caveats: [AGENTS.md](AGENTS.md).
 
 ## Reusable field groups
 

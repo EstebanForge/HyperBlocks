@@ -29,6 +29,12 @@
      */
     var INNER_BLOCKS_SENTINEL = '<!--hyperblocks:innerblocks-->';
 
+    // Slotted blocks whose template lacks the <InnerBlocks /> marker: the
+    // editor still mounts a live nested-blocks area, but the front end has no
+    // marker to resolve, so nested content would silently never render. Warn
+    // once per block while the author can still act on it.
+    var warnedNoMarker = {};
+
     /**
      * Build the edit component for a slotted (inner-blocks) block.
      *
@@ -63,8 +69,7 @@
 
             // Stable dependency: attribute identity changes every render; the
             // serialized form only changes when values change.
-            var attributesKey = JSON.stringify(props.attributes || {});
-
+    var attributesKey = JSON.stringify(props.attributes || {});
             useEffect(function () {
                 var cancelled = false;
 
@@ -142,6 +147,18 @@
                 // so the block stays editable.
                 if (!swapped) {
                     frag.appendChild(slotRef.current);
+                }
+
+                // A rendered shell with no marker means the author opted in via
+                // ->innerBlocks() but the template never renders the slot; the
+                // front end would drop the nested content. Warn once.
+                if (!swapped && html && !warnedNoMarker[props.name]) {
+                    warnedNoMarker[props.name] = true;
+                    if (window.console && window.console.warn) {
+                        window.console.warn(
+                            '[HyperBlocks] ' + props.name + ': the template has no <InnerBlocks /> marker; nested blocks will not appear on the front end.'
+                        );
+                    }
                 }
 
                 container.innerHTML = '';

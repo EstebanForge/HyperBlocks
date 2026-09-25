@@ -388,7 +388,7 @@ $block->innerBlocks([
 ]);
 ```
 
-Forms accepted: self-closing, paired (`<InnerBlocks>junk</InnerBlocks>`), attributed, and bare open tags, case-insensitively; quoted `>` inside attribute values is tolerated. Use exactly one marker per template. When a block has no inner markup available (preview requests, childless instances) the marker resolves to the inert `<!--hyperblocks:innerblocks-->` sentinel instead. Full behavior and caveats: see "InnerBlocks support (fluent blocks)" under the Renderer section.
+Forms accepted: self-closing, paired (`<InnerBlocks>junk</InnerBlocks>`), attributed, and bare open tags, case-insensitively; quoted `>` inside attribute values is tolerated. Use exactly one marker per template: the editor mounts its slot at the first marker and the front end injects content at every marker. A slotted template with no marker at all drops nested content on the front end; the editor console warns once per block. When a block has no inner markup available (preview requests, childless instances) the marker resolves to the inert `<!--hyperblocks:innerblocks-->` sentinel instead. Full behavior and caveats: see "InnerBlocks support (fluent blocks)" under the Renderer section.
 
 ### Error handling
 

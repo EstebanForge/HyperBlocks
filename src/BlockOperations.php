@@ -70,6 +70,11 @@ final class BlockOperations
      * @param string $blockName  Block name (namespace/slug).
      * @param array  $attributes Incoming attributes; sanitized before rendering.
      * @param string $content    Inner-blocks markup injected at <InnerBlocks /> markers.
+     *                           Sanitized through wp_kses_post here — the single
+     *                           implementation behind both the REST and the ability
+     *                           surface — so neither surface can return unsanitized
+     *                           markup (WP core validates ability input types but
+     *                           never sanitizes them).
      * @return array{status: string, html: string, error: string, rest_status: int}
      *                status: ok | no_template | not_found | error. rest_status
      *                carries the HTTP status the REST layer should map to; the
@@ -77,6 +82,7 @@ final class BlockOperations
      */
     public static function preview(string $blockName, array $attributes, string $content = ''): array
     {
+        $content = wp_kses_post($content);
         $registry = Registry::getInstance();
         $block = $registry->getFluentBlock($blockName);
 
@@ -155,7 +161,7 @@ final class BlockOperations
 
         try {
             $renderer = new Renderer();
-            $html = $renderer->render('file:' . $renderFile, $attributes);
+            $html = $renderer->render('file:' . $renderFile, $attributes, $content);
 
             return ['status' => 'ok', 'html' => $html, 'error' => '', 'rest_status' => 200];
         } catch (\Throwable $e) {

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use HyperBlocks\BlockOperations;
+use HyperBlocks\Config;
 use HyperBlocks\Registry;
 use HyperBlocks\Renderer;
 use HyperBlocks\WordPress\Bootstrap;
@@ -172,4 +173,61 @@ it('forwards inner content through the hb_render helper', function (): void {
     $html = hb_render('<div><InnerBlocks /></div>', [], '<em>hi</em>');
 
     expect($html)->toBe('<div><em>hi</em></div>');
+});
+
+/*
+ * Review fixes: preview-surface sanitization, JSON parity, PCRE failure mode.
+ */
+
+it('sanitizes content at the shared preview entry point', function (): void {
+    Registry::getInstance()->registerFluentBlock(
+        HyperBlocks\Block\Block::make('Slotted Safe')
+            ->setName('acme/slotted-safe')
+            ->setRenderTemplate('<main><InnerBlocks /></main>')
+    );
+
+    $result = BlockOperations::preview('acme/slotted-safe', [], '<p>keep</p><script>alert(1)</script>');
+
+    expect($result['status'])->toBe('ok');
+    // kses semantics: disallowed tags are stripped, allowed markup passes
+    // through (inner text of stripped tags remains, as in core wp_kses_post).
+    expect($result['html'])->not->toContain('<script');
+    expect($result['html'])->toContain('<main><p>keep</p>');
+});
+
+it('forwards content to JSON block previews as well', function (): void {
+    $dir = sys_get_temp_dir() . '/hb-json-innerblocks-' . uniqid('', true);
+    mkdir($dir . '/json-slotted', 0777, true);
+    file_put_contents($dir . '/json-slotted/block.json', json_encode([
+        'name'        => 'test/json-slotted',
+        'title'       => 'Json Slotted',
+        'hyperblocks' => true,
+        'attributes'  => new stdClass(),
+    ]));
+    file_put_contents($dir . '/json-slotted/render.php', '<?php echo "<InnerBlocks />"; ?>');
+    Config::registerBlockPath($dir);
+
+    $result = BlockOperations::preview('test/json-slotted', [], '<p>nested</p>');
+
+    @unlink($dir . '/json-slotted/render.php');
+    @unlink($dir . '/json-slotted/block.json');
+    @rmdir($dir . '/json-slotted');
+    @rmdir($dir);
+
+    expect($result['status'])->toBe('ok');
+    expect($result['html'])->toBe('<p>nested</p>');
+});
+
+it('keeps the template html when preg hits its backtrack limit', function (): void {
+    $limit = ini_set('pcre.backtrack_limit', '50');
+    try {
+        $renderer = new Renderer();
+        $pad = str_repeat('a="b" ', 80);
+        $html = $renderer->render('<i><InnerBlocks ' . $pad . '/></i>', [], 'K');
+    } finally {
+        ini_set('pcre.backtrack_limit', (string) $limit);
+    }
+
+    // Degraded but sane: the marker survives instead of the render nulling out.
+    expect($html)->toContain('<InnerBlocks');
 });

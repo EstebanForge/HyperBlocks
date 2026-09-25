@@ -406,21 +406,25 @@ class Renderer
         $replacement = $content !== '' ? $content : self::INNER_BLOCKS_SENTINEL;
 
         // Attribute section shared by both passes: quoted values may contain '>'.
+        // preg_replace_callback returns null on PCRE failure (e.g. the backtrack
+        // limit hit by a pathological template); fall back to the original HTML
+        // rather than collapsing the block output to null.
         // Paired form first (<InnerBlocks>junk</InnerBlocks>), so stray author
         // markup between the tags is consumed. The lookbehind keeps self-closing
         // tags (<InnerBlocks />) for the second pass so mixed usage never
         // collapses two markers into one replacement.
-        $html = preg_replace_callback(
+        $parsed = preg_replace_callback(
             '/<InnerBlocks\b(?:[^>"\']|"[^"]*"|\'[^\']*\')*(?<!\/)>.*?<\/InnerBlocks>/is',
             static fn (): string => $replacement,
             $html
         );
+        $html = $parsed ?? $html;
 
         // Then self-closing and bare open tags (slash optional).
         return preg_replace_callback(
             '/<InnerBlocks\b(?:[^>"\']|"[^"]*"|\'[^\']*\')*\/?>/i',
             static fn (): string => $replacement,
             $html
-        );
+        ) ?? $html;
     }
 }

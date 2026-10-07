@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+- **`file:` block templates could fatal with an undefined function when a stale copy of the library booted alongside a newer one.** When a consumer ships the library both at the site-root vendor and inside a plugin's own vendor, Composer's files-autoload dedup can run the older copy's `bootstrap.php` (same identifier hash in both `autoload_files.php` files) while the newer copy's classes win the SPL election (Composer registers with `register(true)`, so the later-registered plugin autoloader is prepended). With `hb_path_within_base()` defined only inside `Bootstrap::init()` after its guard clauses, a stale root bootstrap predating the pre-`ABSPATH` scheduler left nothing scheduled at `after_setup_theme`, the procedural helper never loaded, and the first `file:` template validation on `init` threw `Call to undefined function hb_path_within_base()` on every request. The containment check now lives on the new `Path` class (`Path::withinBase()`); `Block` and `Renderer` call the class method directly, so whatever copy wins the class election is self-consistent and class autoloading makes scheduling and guard order irrelevant. `hb_path_within_base()` remains as a thin back-compat wrapper delegating to the class.
+
 ## [1.7.0] - 2026-09-25
 
 ### Added

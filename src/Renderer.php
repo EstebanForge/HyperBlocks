@@ -210,12 +210,15 @@ class Renderer
             if (!$realBase) {
                 continue;
             }
-            // hb_path_within_base() normalizes both sides: realpath() returns
+            // Path::withinBase() normalizes both sides: realpath() returns
             // backslash separators on Windows, where a raw '/'-suffixed base
             // never prefix-matched. The trailing-separator anchor inside the
-            // helper still keeps sibling-prefix paths (blocks vs blocks-evil)
-            // from counting as inside the base.
-            if (\hb_path_within_base($realPath, $realBase)) {
+            // check still keeps sibling-prefix paths (blocks vs blocks-evil)
+            // from counting as inside the base. Called on the class (not the
+            // hb_path_within_base() helper) so the check can never hit an
+            // undefined-function fatal when a divergent vendor copy's
+            // procedural helpers did not load.
+            if (\HyperBlocks\Path::withinBase($realPath, $realBase)) {
                 $isValid = true;
                 break;
             }

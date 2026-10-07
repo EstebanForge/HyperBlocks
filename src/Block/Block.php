@@ -270,10 +270,13 @@ class Block
             // Without it, str_starts_with('/var/www/blocks-evil/x',
             // '/var/www/blocks') would treat an unregistered sibling directory
             // whose name shares a prefix as "inside" the allowed base.
-            // hb_path_within_base() normalizes both sides first: realpath()
+            // Path::withinBase() normalizes both sides first: realpath()
             // returns backslash separators on Windows, where a raw '/'-suffixed
             // base never prefix-matched and rejected every file: template.
-            if (\hb_path_within_base($real, $realBase)) {
+            // Called on the class (not the hb_path_within_base() helper) so
+            // the check can never hit an undefined-function fatal when a
+            // divergent vendor copy's procedural helpers did not load.
+            if (\HyperBlocks\Path::withinBase($real, $realBase)) {
                 $valid = true;
                 break;
             }

@@ -235,16 +235,19 @@ class FieldTest extends TestCase
 
     public function testSetConditionalLogicDelegates(): void
     {
-        $logic = [
+        $condition = ['field' => 'layout', 'operator' => '=', 'value' => 'boxed'];
+
+        $field = Field::make('text', 'title', 'Title')->setConditionalLogic([
             'relation' => 'AND',
-            'conditions' => [
-                ['field' => 'layout', 'operator' => '=', 'value' => 'boxed'],
-            ],
-        ];
+            'conditions' => [$condition],
+        ]);
 
-        $field = Field::make('text', 'title', 'Title')->setConditionalLogic($logic);
-
-        $this->assertSame($logic, $field->toArray()['conditional_logic']);
+        // HyperFields canonicalizes on write; the wrapper forwards that shape.
+        $this->assertSame([
+            'relation' => 'AND',
+            'conditions' => [$condition],
+            'groups' => [[$condition]],
+        ], $field->toArray()['conditional_logic']);
     }
 
     public function testUiMetaDefaultsInToArray(): void

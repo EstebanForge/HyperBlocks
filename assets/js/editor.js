@@ -246,7 +246,10 @@
                 var list = Array.isArray(expected) ? expected : [expected];
                 var currentList = Array.isArray(current) ? current : [current];
                 var found = currentList.some(function (item) {
-                    return list.indexOf(item) !== -1;
+                    // PHP array_intersect compares loosely as strings.
+                    return list.some(function (candidate) {
+                        return String(candidate) === String(item);
+                    });
                 });
                 return operator === 'IN' ? found : !found;
             }
@@ -285,6 +288,28 @@
                 }
                 return evaluateCondition(values[condition.field], condition.operator, condition.value);
             });
+        });
+    }
+
+    /**
+     * Tab identities key off the label, not the position, so a conditionally
+     * hidden tab does not reset the selection of the remaining tabs.
+     */
+    function buildTabDefs(groups) {
+        var seen = {};
+        return groups.map(function (group) {
+            var slug = String(group.label || 'general')
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '') || 'general';
+            var name = slug;
+            var suffix = 2;
+            while (seen[name]) {
+                name = slug + '-' + suffix;
+                suffix += 1;
+            }
+            seen[name] = true;
+            return { name: name, group: group };
         });
     }
 
@@ -462,7 +487,8 @@
                     el(components.DateTimePicker, {
                         currentDate: typeof current === 'string' && current ? current : undefined,
                         onChange: function (next) {
-                            onChange(next || '');
+                            var nextValue = next || '';
+                            onChange(field.type === 'date' ? nextValue.slice(0, 10) : nextValue);
                         }
                     }),
                     el('span', { className: 'hyperblocks-field-label' }, makeLabel(el, field))
@@ -540,10 +566,14 @@
         var el = window.wp.element.createElement;
         var components = window.wp.components;
         var out = [];
-        group.sections.forEach(function (section) {
+        group.sections.forEach(function (section, sectionIndex) {
             var controls = section.fields
                 .map(function (field) {
-                    return createControl(field, props.attributes[field.name], attributeSetter(props, field.name));
+                    var control = createControl(field, props.attributes[field.name], attributeSetter(props, field.name));
+                    if (!control) {
+                        return null;
+                    }
+                    return el(window.wp.element.Fragment, { key: field.name }, control);
                 })
                 .filter(Boolean);
             if (!controls.length) {
@@ -551,6 +581,7 @@
             }
             if (section.label) {
                 out.push(el(components.PanelBody, {
+                    key: 'section-' + sectionIndex + '-' + section.label,
                     title: section.label,
                     initialOpen: true
                 }, controls));
@@ -571,14 +602,17 @@
         var children = [];
 
         if (grouped.useTabs && grouped.tabs.length) {
+            var tabDefs = buildTabDefs(grouped.tabs);
             children.push(el(components.TabPanel, {
                 className: 'hyperblocks-sidebar-tabs',
-                tabs: grouped.tabs.map(function (tab, index) {
-                    return { name: 'hb-tab-' + index, title: tab.label };
+                tabs: tabDefs.map(function (tabDef) {
+                    return { name: tabDef.name, title: tabDef.group.label };
                 }),
                 children: function (tab) {
-                    var index = parseInt(String(tab.name).replace('hb-tab-', ''), 10);
-                    var group = grouped.tabs[index] || { label: '', sections: [] };
+                    var tabDef = tabDefs.find(function (candidate) {
+                        return candidate.name === tab.name;
+                    });
+                    var group = tabDef ? tabDef.group : { label: '', sections: [] };
                     return el('div', { className: 'hyperblocks-tab-panel' }, renderSections(group, props));
                 }
             }));
@@ -654,8 +688,15 @@
             }, [attributesKey]);
 
             return el('div', blockProps,
+                // Inline styles: under apiVersion 3 the canvas is iframed and
+                // editor.css never reaches it.
                 el('div', {
                     className: 'hyperblocks-sample-preview',
+                    style: {
+                        outline: '2px dashed #9ca3af',
+                        outlineOffset: '-2px',
+                        padding: '8px',
+                    },
                     dangerouslySetInnerHTML: { __html: preview.html }
                 }));
         };
@@ -670,15 +711,23 @@
         return function (props) {
             var el = window.wp.element.createElement;
             var useState = window.wp.element.useState;
+            var useMemo = window.wp.element.useMemo;
 
             var sampleState = useState(false);
             var sample = sampleState[0];
             var setSample = sampleState[1];
 
+            // Built once per block entry: creating the component inside the
+            // render would change its type each render and remount it,
+            // resetting preview state and defeating the debounce.
+            var SamplePreview = useMemo(function () {
+                return createSamplePreview(entry);
+            }, [entry]);
+
             var inspector = el(window.wp.blockEditor.InspectorControls, {},
                 renderInspector(entry, props, sample, setSample));
             var canvas = sample
-                ? el(createSamplePreview(entry), props)
+                ? el(SamplePreview, props)
                 : el(baseEdit, props);
 
             return el(window.wp.element.Fragment, {}, inspector, canvas);

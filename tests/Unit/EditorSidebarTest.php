@@ -131,6 +131,38 @@ class EditorSidebarTest extends TestCase
         $this->assertSame('REAL', $result['html']);
     }
 
+    public function testInlineSchemaShipsOnlySidebarKeys(): void
+    {
+        $block = Block::make('Projected Schema Block')
+            ->setName('test/projected-schema')
+            ->setEditorSidebar()
+            ->addFields([Field::make('text', 'heading', 'Heading')]);
+        Registry::getInstance()->registerFluentBlock($block);
+        Bootstrap::registerBlocks();
+
+        $heading = $this->decodedConfig()[0]['fields'][0];
+
+        $this->assertArrayNotHasKey('name_attr', $heading);
+        $this->assertArrayNotHasKey('validation', $heading);
+        $this->assertArrayNotHasKey('args', $heading);
+        $this->assertSame('heading', $heading['name']);
+    }
+
+    public function testInlineConfigEncodesMarkupBreakouts(): void
+    {
+        $block = Block::make('Encode Block')
+            ->setName('test/encode')
+            ->setEditorSidebar()
+            ->addFields([Field::make('text', 'heading', 'Heading </script><img src=x onerror=alert(1)>')]);
+        Registry::getInstance()->registerFluentBlock($block);
+        Bootstrap::registerBlocks();
+
+        $inline = HyperBlocks_Testing_Registry::getLastInlineScript();
+
+        $this->assertStringNotContainsString('</script>', $inline['data']);
+        $this->assertStringContainsString('\u003C', $inline['data']);
+    }
+
     /**
      * Decode the block config payload the bootstrap seeded inline.
      *

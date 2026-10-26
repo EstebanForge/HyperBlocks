@@ -502,12 +502,21 @@ class Bootstrap
                     'templateLock'  => $block->inner_blocks['templateLock'] ?? null,
                 ], static fn ($v) => $v !== null);
             }
+            if ($block->editor_sidebar === true) {
+                // Field schema rides the same inline channel so the sidebar
+                // renders without a per-block REST fetch.
+                $config['editorSidebar'] = true;
+                $config['fields'] = array_map(
+                    static fn ($field) => $field->toArray(),
+                    array_values($registry->getMergedFields($block))
+                );
+            }
             $blockConfigs[] = $config;
         }
 
         wp_add_inline_script(
             $scriptHandle,
-            'window.hyperBlocksConfig = ' . wp_json_encode($blockConfigs) . ';',
+            'window.hyperBlocksConfig = ' . wp_json_encode($blockConfigs, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) . ';',
             'before'
         );
     }

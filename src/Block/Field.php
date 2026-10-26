@@ -183,6 +183,19 @@ class Field
     }
 
     /**
+     * Set conditional logic for the field.
+     *
+     * @param array $conditional_logic The conditional logic definition.
+     * @return self
+     */
+    public function setConditionalLogic(array $conditional_logic): self
+    {
+        $this->hyperField->setConditionalLogic($conditional_logic);
+
+        return $this;
+    }
+
+    /**
      * Set field options (for select, radio, etc.).
      *
      * @param array $options The options array.

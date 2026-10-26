@@ -233,6 +233,20 @@ class FieldTest extends TestCase
         $this->assertTrue($field->toArray()['live']);
     }
 
+    public function testSetConditionalLogicDelegates(): void
+    {
+        $logic = [
+            'relation' => 'AND',
+            'conditions' => [
+                ['field' => 'layout', 'operator' => '=', 'value' => 'boxed'],
+            ],
+        ];
+
+        $field = Field::make('text', 'title', 'Title')->setConditionalLogic($logic);
+
+        $this->assertSame($logic, $field->toArray()['conditional_logic']);
+    }
+
     public function testUiMetaDefaultsInToArray(): void
     {
         $array = Field::make('text', 'title', 'Title')->toArray();

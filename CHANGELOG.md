@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.8.2] - 2026-10-28
+
+### Changed
+- **HyperFields 1.7.2.** Lockstep release pinning the `estebanforge/hyperfields` `*` constraint at 1.7.2: page-level fields on section-less options pages now render via an implicit default section, and mixed page-level fields plus explicit sections trigger `_doing_it_wrong()` instead of silently dropping. No HyperBlocks code changes.
+
 ## [1.8.1] - 2026-10-28
 
 ### Added

@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.8.1] - 2026-10-28
+
+### Added
+- **Shorthand `.hb-*` CSS classes and component aliases.** Aliased `.hb-*` selectors alongside `.hyperblocks-*` in editor CSS (`editor.css`), UI components (`Sidebar.js`, `InnerBlocksPlaceholder.js`, `PreviewDataPanel.js`), and PHP error templates while retaining full backward compatibility.
+
+### Changed
+- **HyperFields constraint.** Required `estebanforge/hyperfields` with `*` constraint.
+
 ## [1.8.0] - 2026-10-26
 
 ### Added
